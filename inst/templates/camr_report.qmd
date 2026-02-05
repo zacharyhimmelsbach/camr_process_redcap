@@ -1,0 +1,126 @@
+---
+title: "CAMR REDCap Report"
+format:
+  html:
+    embed-resources: true
+params:
+  subject_level_path: null
+  subject_visit_path: null
+  consort_path: null
+  id_field: "record_id"
+  status_field: "record_status"
+  event_label_field: "event_label"
+  event_number_field: "event_number"
+  status_active_values: []
+  status_dropout_values: []
+---
+
+```{r}
+#| message: false
+#| warning: false
+library(dplyr)
+library(ggplot2)
+library(purrr)
+
+subject_level <- readRDS(params$subject_level_path)
+subject_visit <- readRDS(params$subject_visit_path)
+consort_data <- readRDS(params$consort_path)
+
+id_field <- params$id_field
+status_field <- params$status_field
+event_label_field <- params$event_label_field
+event_number_field <- params$event_number_field
+
+active_vals <- as.character(params$status_active_values)
+dropout_vals <- as.character(params$status_dropout_values)
+
+subject_level <- as_tibble(subject_level)
+subject_visit <- as_tibble(subject_visit)
+consort_data <- as_tibble(consort_data)
+
+subject_level[[status_field]] <- as.character(subject_level[[status_field]])
+subject_visit[[status_field]] <- as.character(subject_visit[[status_field]])
+```
+
+## CONSORT Diagram
+
+```{r}
+#| fig-width: 8
+#| fig-height: 5
+if (requireNamespace("consort", quietly = TRUE)) {
+  boxes <- purrr::map2(consort_data$stage, consort_data$n, ~ consort::consort_box(text = .x, n = .y))
+  do.call(consort::consort_plot, boxes)
+} else {
+  ggplot(consort_data, aes(x = stage, y = n)) +
+    geom_col(fill = "#3b6fb6") +
+    labs(x = NULL, y = "Count") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 20, hjust = 1))
+}
+```
+
+## Most Recent Event (Active/Completed)
+
+```{r}
+#| fig-width: 7
+#| fig-height: 4
+active_subjects <- subject_level |>
+  filter(.data[[status_field]] %in% active_vals) |>
+  select(.data[[id_field]])
+
+latest_active <- subject_visit |>
+  filter(.data[[id_field]] %in% active_subjects[[id_field]]) |>
+  filter(!is.na(.data[[event_number_field]])) |>
+  group_by(.data[[id_field]]) |>
+  slice_max(.data[[event_number_field]], with_ties = FALSE) |>
+  ungroup()
+
+latest_active_label <- if (event_label_field %in% names(latest_active)) {
+  latest_active[[event_label_field]]
+} else {
+  latest_active[[event_number_field]]
+}
+
+active_plot <- as_tibble(latest_active) |>
+  mutate(event_label = latest_active_label) |>
+  count(event_label)
+
+ggplot(active_plot, aes(x = event_label, y = n)) +
+  geom_col(fill = "#4c9f70") +
+  labs(x = "Most recent event", y = "Participants") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+```
+
+## Most Recent Event (Dropped Out)
+
+```{r}
+#| fig-width: 7
+#| fig-height: 4
+dropout_subjects <- subject_level |>
+  filter(.data[[status_field]] %in% dropout_vals) |>
+  select(.data[[id_field]])
+
+latest_dropout <- subject_visit |>
+  filter(.data[[id_field]] %in% dropout_subjects[[id_field]]) |>
+  filter(!is.na(.data[[event_number_field]])) |>
+  group_by(.data[[id_field]]) |>
+  slice_max(.data[[event_number_field]], with_ties = FALSE) |>
+  ungroup()
+
+latest_dropout_label <- if (event_label_field %in% names(latest_dropout)) {
+  latest_dropout[[event_label_field]]
+} else {
+  latest_dropout[[event_number_field]]
+}
+
+dropout_plot <- as_tibble(latest_dropout) |>
+  mutate(event_label = latest_dropout_label) |>
+  count(event_label)
+
+ggplot(dropout_plot, aes(x = event_label, y = n)) +
+  geom_col(fill = "#d95f5f") +
+  labs(x = "Most recent event", y = "Participants") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+```

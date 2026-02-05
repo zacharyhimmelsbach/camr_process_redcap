@@ -1,0 +1,54 @@
+---
+title: "Getting Started with camr_process_redcap"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with camr_process_redcap}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This vignette shows how to generate a `targets` pipeline and produce the standardized datasets and report.
+
+## Generate the pipeline
+
+```{r eval=FALSE}
+library(camr_process_redcap)
+
+write_redcap_targets(
+  redcap_url = "https://your-redcap-server/api/",
+  api_token = Sys.getenv("REDCAP_API_TOKEN"),
+  out_dir = "camr_redcap_pipeline"
+)
+```
+
+This writes into the new folder:
+
+-   `_targets.R`
+-   `camr_redcap_config.yml`
+-   `camr_report.qmd`
+
+## Configure status values
+
+Open `camr_redcap_config.yml` and set:
+
+-   `status_active_values`
+-   `status_dropout_values`
+
+These should match the `record_status` dropdown labels in REDCap. The pipeline will validate the values against metadata and warn if they do not match.
+
+## Run the pipeline
+
+```{r eval=FALSE}
+Sys.setenv(REDCAP_API_TOKEN = "<your_token>")
+
+targets::tar_make()
+```
+
+The report renders to `camr_report.html` with embedded resources for easy emailing.

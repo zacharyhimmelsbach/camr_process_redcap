@@ -1,0 +1,35 @@
+Package: camr_process_redcap
+Title: REDCap Processing and Targets Pipelines for CAMR
+Version: 0.1.0
+Authors@R: c(
+    person("CAMR", "Team", email = "camr@example.com", role = c("aut", "cre"))
+  )
+Description: Generate targets pipelines and tidy datasets from REDCap projects,
+    including subject-, visit-, and repeating-instrument level outputs and
+    automated reporting.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends: R (>= 4.1)
+Imports:
+    dplyr,
+    tibble,
+    tidyr,
+    purrr,
+    stringr,
+    rlang,
+    httr,
+    jsonlite,
+    yaml,
+    targets
+Suggests:
+    testthat (>= 3.0.0),
+    ggplot2,
+    consort,
+    quarto,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2

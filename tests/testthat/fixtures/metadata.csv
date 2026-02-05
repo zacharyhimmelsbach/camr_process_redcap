@@ -1,0 +1,7 @@
+field_name,form_name,field_type,select_choices_or_calculations
+record_id,demographics,text,
+record_trial_id,demographics,text,
+record_status,demographics,dropdown,"1, Active | 2, Dropout"
+sex,demographics,radio,"1, Male | 2, Female"
+visit_date,visit,text,
+symptom,visit,checkbox,"1, Cough | 2, Fever"
