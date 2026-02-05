@@ -26,8 +26,8 @@ camr_form_data <- function(data, metadata, form_name, config, events = NULL) {
   if (!is.null(events) && nrow(events) > 0 && config$event_name_field %in% names(out)) {
     out <- dplyr::left_join(
       out,
-      dplyr::select(events, dplyr::any_of(c(\"event_name\", \"event_number\", \"event_label\"))),
-      by = setNames(\"event_name\", config$event_name_field)
+      dplyr::select(events, dplyr::any_of(c("event_name", "event_number", "event_label"))),
+      by = setNames("event_name", config$event_name_field)
     )
   }
   out <- camr_apply_labels(out, metadata)
