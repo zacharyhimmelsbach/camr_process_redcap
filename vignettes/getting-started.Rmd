@@ -1,8 +1,8 @@
 ---
-title: "Getting Started with camr_process_redcap"
+title: "Getting Started with camrProcessRedcap"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Getting Started with camr_process_redcap}
+  %\VignetteIndexEntry{Getting Started with camrProcessRedcap}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -19,7 +19,7 @@ This vignette shows how to generate a `targets` pipeline and produce the standar
 ## Generate the pipeline
 
 ```{r eval=FALSE}
-library(camr_process_redcap)
+library(camrProcessRedcap)
 
 write_redcap_targets(
   redcap_url = "https://your-redcap-server/api/",

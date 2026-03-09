@@ -3,60 +3,73 @@ title: "CAMR REDCap Report"
 format:
   html:
     embed-resources: true
+    toc: true
+    toc-depth: 3
+execute:
+  echo: false
 params:
-  subject_level_path: null
-  subject_visit_path: null
-  consort_path: null
-  id_field: "record_id"
-  status_field: "record_status"
-  event_label_field: "event_label"
-  event_number_field: "event_number"
-  status_active_values: []
-  status_dropout_values: []
+  subject_level_path:
+    value: null
+  subject_visit_path:
+    value: null
+  consort_path:
+    value: null
+  id_field:
+    value: "record_id"
+  trial_id_field:
+    value: "record_subject_id"
+  status_field:
+    value: "record_status"
+  event_label_field:
+    value: "event_label"
+  event_number_field:
+    value: "event_number"
+  consort_population_field:
+    value: null
+  recruitment_study_start_date:
+    value: null
+  recruitment_planned_end_date:
+    value: null
+  recruitment_goal_n:
+    value: null
+  recruitment_consent_date_field:
+    value: null
+  status_active_values:
+    value: []
+  status_dropout_values:
+    value: []
 ---
 
 ```{r}
 #| message: false
 #| warning: false
-library(dplyr)
-library(ggplot2)
-library(purrr)
-
 subject_level <- readRDS(params$subject_level_path)
 subject_visit <- readRDS(params$subject_visit_path)
 consort_data <- readRDS(params$consort_path)
 
 id_field <- params$id_field
+trial_id_field <- params$trial_id_field
 status_field <- params$status_field
 event_label_field <- params$event_label_field
 event_number_field <- params$event_number_field
+consort_population_field <- params$consort_population_field
+recruitment_study_start_date <- params$recruitment_study_start_date
+recruitment_planned_end_date <- params$recruitment_planned_end_date
+recruitment_goal_n <- params$recruitment_goal_n
+recruitment_consent_date_field <- params$recruitment_consent_date_field
+recruitment_data_cutoff_date <- Sys.Date()
 
 active_vals <- as.character(params$status_active_values)
 dropout_vals <- as.character(params$status_dropout_values)
-
-subject_level <- as_tibble(subject_level)
-subject_visit <- as_tibble(subject_visit)
-consort_data <- as_tibble(consort_data)
-
-subject_level[[status_field]] <- as.character(subject_level[[status_field]])
-subject_visit[[status_field]] <- as.character(subject_visit[[status_field]])
 ```
 
 ## CONSORT Diagram
 
 ```{r}
-#| fig-width: 8
-#| fig-height: 5
-if (requireNamespace("consort", quietly = TRUE)) {
-  boxes <- purrr::map2(consort_data$stage, consort_data$n, ~ consort::consort_box(text = .x, n = .y))
-  do.call(consort::consort_plot, boxes)
-} else {
-  ggplot(consort_data, aes(x = stage, y = n)) +
-    geom_col(fill = "#3b6fb6") +
-    labs(x = NULL, y = "Count") +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 20, hjust = 1))
-}
+#| fig-width: 14
+#| fig-height: 10
+#| out-width: 100%
+camrProcessRedcap::camr_report_plot_consort(consort_data)
 ```
 
 ## Most Recent Event (Active/Completed)
@@ -64,32 +77,16 @@ if (requireNamespace("consort", quietly = TRUE)) {
 ```{r}
 #| fig-width: 7
 #| fig-height: 4
-active_subjects <- subject_level |>
-  filter(.data[[status_field]] %in% active_vals) |>
-  select(.data[[id_field]])
-
-latest_active <- subject_visit |>
-  filter(.data[[id_field]] %in% active_subjects[[id_field]]) |>
-  filter(!is.na(.data[[event_number_field]])) |>
-  group_by(.data[[id_field]]) |>
-  slice_max(.data[[event_number_field]], with_ties = FALSE) |>
-  ungroup()
-
-latest_active_label <- if (event_label_field %in% names(latest_active)) {
-  latest_active[[event_label_field]]
-} else {
-  latest_active[[event_number_field]]
-}
-
-active_plot <- as_tibble(latest_active) |>
-  mutate(event_label = latest_active_label) |>
-  count(event_label)
-
-ggplot(active_plot, aes(x = event_label, y = n)) +
-  geom_col(fill = "#4c9f70") +
-  labs(x = "Most recent event", y = "Participants") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+camrProcessRedcap::camr_report_plot_latest_active(
+  subject_level = subject_level,
+  subject_visit = subject_visit,
+  id_field = id_field,
+  status_field = status_field,
+  event_label_field = event_label_field,
+  event_number_field = event_number_field,
+  status_active_values = active_vals,
+  consort_population_field = consort_population_field
+)
 ```
 
 ## Most Recent Event (Dropped Out)
@@ -97,30 +94,85 @@ ggplot(active_plot, aes(x = event_label, y = n)) +
 ```{r}
 #| fig-width: 7
 #| fig-height: 4
-dropout_subjects <- subject_level |>
-  filter(.data[[status_field]] %in% dropout_vals) |>
-  select(.data[[id_field]])
+camrProcessRedcap::camr_report_plot_latest_dropout(
+  subject_level = subject_level,
+  subject_visit = subject_visit,
+  id_field = id_field,
+  status_field = status_field,
+  event_label_field = event_label_field,
+  event_number_field = event_number_field,
+  status_dropout_values = dropout_vals,
+  consort_population_field = consort_population_field
+)
+```
 
-latest_dropout <- subject_visit |>
-  filter(.data[[id_field]] %in% dropout_subjects[[id_field]]) |>
-  filter(!is.na(.data[[event_number_field]])) |>
-  group_by(.data[[id_field]]) |>
-  slice_max(.data[[event_number_field]], with_ties = FALSE) |>
-  ungroup()
+## Recruitment Accrual
 
-latest_dropout_label <- if (event_label_field %in% names(latest_dropout)) {
-  latest_dropout[[event_label_field]]
-} else {
-  latest_dropout[[event_number_field]]
+```{r}
+#| fig-width: 8
+#| fig-height: 5
+plot_overall <- function(population_value = NULL) {
+  camrProcessRedcap::camr_report_plot_recruitment_accrual(
+    subject_level = subject_level,
+    id_field = id_field,
+    trial_id_field = trial_id_field,
+    consent_date_field = recruitment_consent_date_field,
+    study_start_date = recruitment_study_start_date,
+    planned_end_date = recruitment_planned_end_date,
+    recruitment_goal_n = recruitment_goal_n,
+    consort_population_field = consort_population_field,
+    population_value = population_value,
+    data_cutoff_date = recruitment_data_cutoff_date
+  )
 }
 
-dropout_plot <- as_tibble(latest_dropout) |>
-  mutate(event_label = latest_dropout_label) |>
-  count(event_label)
+population_values <- NULL
+if (!is.null(consort_population_field) &&
+  nzchar(as.character(consort_population_field)) &&
+  consort_population_field %in% names(subject_level)) {
+  parse_date <- function(x) {
+    x <- as.character(x)
+    x <- trimws(x)
+    x[x == ""] <- NA_character_
+    x10 <- substr(x, 1, 10)
+    out <- as.Date(x10, tryFormats = c("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y"))
+    missing <- is.na(out) & !is.na(x)
+    if (any(missing)) {
+      out[missing] <- as.Date(x[missing], tryFormats = c(
+        "%Y-%m-%d",
+        "%m/%d/%Y",
+        "%m/%d/%y",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M",
+        "%m/%d/%Y %H:%M:%S",
+        "%m/%d/%Y %H:%M",
+        "%m/%d/%y %H:%M:%S",
+        "%m/%d/%y %H:%M"
+      ))
+    }
+    out
+  }
+  eligible <- subject_level
+  if (!is.null(recruitment_consent_date_field) &&
+    nzchar(as.character(recruitment_consent_date_field)) &&
+    recruitment_consent_date_field %in% names(eligible)) {
+    consent_dates <- parse_date(eligible[[recruitment_consent_date_field]])
+    eligible <- eligible[!is.na(consent_dates) & consent_dates <= recruitment_data_cutoff_date, , drop = FALSE]
+  } else {
+    eligible <- eligible[0, , drop = FALSE]
+  }
+  population_values <- unique(as.character(eligible[[consort_population_field]]))
+  population_values <- population_values[!is.na(population_values) & population_values != ""]
+  population_values <- sort(unique(population_values))
+}
 
-ggplot(dropout_plot, aes(x = event_label, y = n)) +
-  geom_col(fill = "#d95f5f") +
-  labs(x = "Most recent event", y = "Participants") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+if (is.null(population_values) || length(population_values) == 0) {
+  print(plot_overall())
+} else {
+  for (pop in population_values) {
+    print(plot_overall(pop))
+  }
+}
 ```

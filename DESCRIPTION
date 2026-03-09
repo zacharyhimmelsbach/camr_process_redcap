@@ -1,4 +1,4 @@
-Package: camr_process_redcap
+Package: camrProcessRedcap
 Title: REDCap Processing and Targets Pipelines for CAMR
 Version: 0.1.0
 Authors@R: c(
@@ -25,6 +25,7 @@ Imports:
 Suggests:
     testthat (>= 3.0.0),
     ggplot2,
+    DiagrammeR,
     consort,
     quarto,
     knitr,
@@ -32,4 +33,4 @@ Suggests:
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3

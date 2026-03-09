@@ -1,4 +1,4 @@
-library(camr_process_redcap)
+library(camrProcessRedcap)
 
 test_that("subject_visit includes subject-level data", {
   metadata <- read.csv(test_path("fixtures", "metadata.csv"), stringsAsFactors = FALSE)
@@ -29,5 +29,29 @@ test_that("subject_visit includes subject-level data", {
   expect_true("record_id" %in% names(subject_visit))
   expect_true("sex" %in% names(subject_visit))
   expect_true("event_label" %in% names(subject_visit))
+  expect_false("redcap_repeat_instrument" %in% names(subject_visit))
+  expect_false("redcap_repeat_instance" %in% names(subject_visit))
   expect_equal(nrow(subject_visit), nrow(data))
+})
+
+test_that("subject_visit includes configured keep_fields", {
+  metadata <- read.csv(test_path("fixtures", "metadata.csv"), stringsAsFactors = FALSE)
+  data <- read.csv(test_path("fixtures", "data.csv"), stringsAsFactors = FALSE)
+  events <- read.csv(test_path("fixtures", "events.csv"), stringsAsFactors = FALSE)
+  data$record_cam_id <- c("CAM-001", "CAM-001", "CAM-002")
+
+  config <- list(
+    id_field = "record_id",
+    trial_id_field = "record_trial_id",
+    status_field = "record_status",
+    event_name_field = "redcap_event_name",
+    keep_fields = c("record_id", "record_cam_id", "record_missing_id")
+  )
+
+  subject_level <- camr_subject_level(data, metadata, events, form_event_map = NULL, config = config, apply_labels = FALSE)
+  subject_visit <- camr_subject_visit(data, metadata, events, subject_level, config)
+
+  expect_true("record_cam_id" %in% names(subject_visit))
+  expect_true("record_missing_id" %in% names(subject_visit))
+  expect_true(all(is.na(subject_visit$record_missing_id)))
 })

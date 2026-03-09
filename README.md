@@ -1,4 +1,4 @@
-# camr_process_redcap
+# camrProcessRedcap
 
 Generate targets pipelines and tidy datasets from REDCap projects, including
 subject-level, subject-visit, and repeating-instrument outputs, plus an
@@ -8,10 +8,10 @@ in only one event.
 ## Quick start
 
 ```r
-library(camr_process_redcap)
+library(camrProcessRedcap)
 
 write_redcap_targets(
-  redcap_url = "https://redcap.example.edu/api/",
+  redcap_url = "https://redcap.partners.org/redcap/api",
   api_token = Sys.getenv("REDCAP_API_TOKEN"),
   out_dir = "camr_redcap_pipeline"
 )

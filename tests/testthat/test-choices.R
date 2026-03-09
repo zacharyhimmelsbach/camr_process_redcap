@@ -1,4 +1,4 @@
-library(camr_process_redcap)
+library(camrProcessRedcap)
 
 test_that("camr_parse_choices parses code/label", {
   parsed <- camr_parse_choices("1, Yes | 2, No")
@@ -18,4 +18,20 @@ test_that("camr_apply_labels converts multiple choice to factors", {
   expect_equal(levels(labeled$sex), c("Male", "Female"))
   expect_true(is.factor(labeled$symptom___1))
   expect_true(is.factor(labeled$symptom___2))
+})
+
+test_that("camr_apply_labels preserves values that are already labels", {
+  metadata <- read.csv(test_path("fixtures", "metadata.csv"), stringsAsFactors = FALSE)
+  data <- tibble::tibble(
+    record_id = "1",
+    record_status = "Active",
+    sex = "Female"
+  )
+
+  labeled <- camr_apply_labels(data, metadata)
+
+  expect_true(is.factor(labeled$record_status))
+  expect_equal(as.character(labeled$record_status), "Active")
+  expect_true(is.factor(labeled$sex))
+  expect_equal(as.character(labeled$sex), "Female")
 })
