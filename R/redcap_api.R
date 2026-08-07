@@ -229,7 +229,6 @@ camr_redcap_events <- function(redcap_url, api_token) {
     if ("arm_num" %in% names(events)) {
       events <- dplyr::group_by(events, .data$arm_num)
     }
-    events <- dplyr::arrange(events, dplyr::across(dplyr::any_of(c("day_offset", "event_name"))))
     events <- dplyr::mutate(events, event_number = dplyr::row_number())
     events <- dplyr::ungroup(events)
   }
