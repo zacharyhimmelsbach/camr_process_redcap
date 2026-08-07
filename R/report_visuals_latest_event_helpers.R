@@ -75,7 +75,13 @@ camr_report_latest_event_plot <- function(subject_level,
   }
 
   plot_data <- tibble::as_tibble(latest) |>
-    dplyr::mutate(event_label = latest_label)
+    dplyr::mutate(
+      event_label = latest_label,
+      event_label = forcats::fct_reorder(
+        .data$event_label,
+        .data[[event_number_field]]
+      )
+    )
 
   has_population <- !is.null(population_field) &&
     nzchar(as.character(population_field)) &&
